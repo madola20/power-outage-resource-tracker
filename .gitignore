@@ -1,0 +1,82 @@
+# Act local testing files
+.secrets
+.vars
+.actrc
+
+#Python
+Include/
+backend/Scripts/
+share/
+Lib/
+__pycache__/
+backend/*venv/
+backend/.venv/
+backend/myenv/
+frontend/node_modules/
+extension/node_modules/
+testing/
+coverage*/
+.scannerwork/
+docs/*/*/html/*
+*_trial_marker
+**/test_res
+
+#File extensions
+*.cfg
+*.pyc
+*.sqlite3
+*.zip
+*.sql
+
+#Files
+*.env*
+*.zip
+*.DS_Store
+bandit_report.json
+
+#React
+node_modules/
+/.pnp
+.pnp.js
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Editor directories and files
+/.vscode/*
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# IDE directories and files
+.idea
+.vscode
+*.iml
+
+# Output of 'npm pack'
+*.tgz
+
+# Compiled source #
+build
+dist
+
+#Ignore .env template
+!template.env
+
+#Sentry
+.env.sentry-build-plugin
+
+#agent
+docs/agent/*
+
+#cursor
+.cursor/
+
+#other
+backend/local-scripts/
