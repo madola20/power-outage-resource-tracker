@@ -91,6 +91,19 @@ export default function Login() {
           </Button>
         </form>
       </Paper>
+
+      <Text 
+        ta="center" 
+        size="xs" 
+        c="dimmed" 
+        mt="xl" 
+        style={{ 
+          fontStyle: 'italic',
+          opacity: 0.7
+        }}
+      >
+        A demo brought to you by Madeline Laurance
+      </Text>
     </Container>
   )
 }

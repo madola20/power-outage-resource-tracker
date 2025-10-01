@@ -43,9 +43,22 @@ export default function Layout({ children }: LayoutProps) {
               hiddenFrom="sm"
               size="sm"
             />
-            <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="blue">
-              Scout
-            </Text>
+            <Group gap="xs">
+              <Text size={{ base: 'lg', sm: 'xl' }} fw={700} c="blue">
+                Scout
+              </Text>
+              <Text 
+                size="xs" 
+                c="dimmed" 
+                style={{ 
+                  fontStyle: 'italic',
+                  opacity: 0.8
+                }}
+                hiddenFrom="xs"
+              >
+                a demo by Madeline Laurance
+              </Text>
+            </Group>
           </Group>
           <Group>
             <Menu shadow="md" width={200}>
