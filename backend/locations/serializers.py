@@ -27,7 +27,7 @@ class LocationSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'status', 'status_display',
             'priority', 'priority_display', 'description',
             'estimated_customers_affected', 'assigned_to', 'assigned_to_id',
-            'reported_by', 'reported_by_id', 'reporter_contact',
+            'reported_by', 'reported_by_id', 'reporter_email', 'reporter_phone',
             'created_at', 'updated_at', 'reported_at',
             'estimated_restoration', 'actual_restoration',
             'is_assigned', 'is_resolved', 'is_critical'
@@ -75,15 +75,26 @@ class LocationCreateSerializer(serializers.ModelSerializer):
         model = Location
         fields = [
             'name', 'address', 'city', 'state', 'zip_code',
-            'latitude', 'longitude', 'priority', 'description',
-            'estimated_customers_affected', 'reporter_contact'
+            'latitude', 'longitude', 'priority', 'priority_display',
+            'status_display', 'description', 'estimated_customers_affected', 
+            'reporter_email', 'reporter_phone'
         ]
     
     def create(self, validated_data):
         """
-        Create location with reporter set from request user
+        Create location with reporter set from request user and auto-populate email
         """
-        validated_data['reported_by'] = self.context['request'].user
+        user = self.context['request'].user
+        validated_data['reported_by'] = user
+        
+        # Auto-populate reporter_email from logged-in user if not provided
+        if not validated_data.get('reporter_email') and user.email:
+            validated_data['reporter_email'] = user.email
+        
+        # Clean phone number - remove all non-numeric characters
+        if validated_data.get('reporter_phone'):
+            validated_data['reporter_phone'] = ''.join(filter(str.isdigit, validated_data['reporter_phone']))
+            
         return Location.objects.create(**validated_data)
 
 
@@ -121,6 +132,80 @@ class LocationAssignmentSerializer(serializers.Serializer):
             return value
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
+
+
+class LocationEditSerializer(serializers.ModelSerializer):
+    """
+    Serializer for editing locations (limited fields for reporters)
+    """
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    
+    class Meta:
+        model = Location
+        fields = [
+            'reporter_email', 'reporter_phone', 'status', 'status_display',
+            'priority', 'priority_display', 'assigned_to'
+        ]
+    
+    def validate_status(self, value):
+        """
+        For reporters, only allow changing status to 'cancelled'
+        """
+        user = self.context['request'].user
+        if user.is_reporter and value != 'cancelled':
+            raise serializers.ValidationError(
+                "Reporters can only change status to 'cancelled'"
+            )
+        return value
+    
+    def validate_reporter_phone(self, value):
+        """
+        Clean phone number - remove all non-numeric characters
+        """
+        if value:
+            return ''.join(filter(str.isdigit, value))
+        return value
+    
+    def validate_assigned_to(self, value):
+        """
+        Validate assignment based on user role
+        """
+        user = self.context['request'].user
+        
+        # Reporters cannot assign locations
+        if user.is_reporter:
+            raise serializers.ValidationError(
+                "Reporters cannot assign locations"
+            )
+        
+        # Team members can only assign to themselves
+        if user.is_team_member and value and value != user:
+            raise serializers.ValidationError(
+                "Team members can only assign locations to themselves"
+            )
+        
+        # Team leads can only assign to team members
+        if user.is_team_lead and value and not value.is_team_member:
+            raise serializers.ValidationError(
+                "Team leads can only assign locations to team members"
+            )
+        
+        return value
+    
+    def validate_priority(self, value):
+        """
+        Only team leads and admins can update priority
+        """
+        user = self.context['request'].user
+        
+        # Only team leads and admins can update priority
+        if not (user.is_team_lead or user.is_admin):
+            raise serializers.ValidationError(
+                "Only team leads and admins can update priority"
+            )
+        
+        return value
 
 
 class LocationStatusUpdateSerializer(serializers.Serializer):

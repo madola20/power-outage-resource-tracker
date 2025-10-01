@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { Paper, Text, Title, Badge, Group, Stack, Card, Box, SimpleGrid } from '@mantine/core'
 import { IconMapPin, IconUsers, IconAlertTriangle, IconCheck } from '@tabler/icons-react'
 import { locationService } from '../services/locationService'
@@ -6,6 +7,7 @@ import { useAuthStore } from '../stores/authStore'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
 
   const { data: locations = [], isLoading } = useQuery({
     queryKey: ['locations-all'],
@@ -83,7 +85,24 @@ export default function Dashboard() {
         ) : (
           <Stack gap="sm">
             {recentLocations.map((location) => (
-              <Group key={location.id} justify="space-between" wrap="nowrap">
+              <Group 
+                key={location.id} 
+                justify="space-between" 
+                wrap="nowrap"
+                style={{ 
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onClick={() => navigate(`/location/${location.id}`)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-0)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
                 <Box style={{ flex: 1, minWidth: 0 }}>
                   <Text fw={500} size="md" truncate>
                     {location.name}

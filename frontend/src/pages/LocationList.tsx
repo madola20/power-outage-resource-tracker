@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Table, Badge, Text, Title, Group, Button, Paper, Stack, Box, Card, Pagination, Center } from '@mantine/core'
-import { IconPlus, IconMapPin, IconEye } from '@tabler/icons-react'
+import { IconPlus, IconMapPin, IconEye, IconEdit } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useLocationNavigation } from '../hooks/useLocationNavigation'
@@ -21,6 +21,16 @@ export default function LocationList() {
 
   const locations = paginatedData?.results || []
   const totalPages = paginatedData ? Math.ceil(paginatedData.count / pageSize) : 0
+
+  // Check if user can edit a location
+  const canEditLocation = (location: any) => {
+    return (
+      user?.role === 'admin' ||
+      user?.role === 'team_lead' ||
+      (user?.role === 'team_member' && location.assigned_to?.id === user.id) ||
+      (user?.role === 'reporter' && location.reported_by?.id === user.id)
+    )
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -122,13 +132,25 @@ export default function LocationList() {
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Button
-                          variant="subtle"
-                          size="xs"
-                          onClick={() => navigateToLocation(location)}
-                        >
-                          View Details
-                        </Button>
+                        <Group gap="xs">
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            onClick={() => navigateToLocation(location)}
+                          >
+                            View Details
+                          </Button>
+                          {canEditLocation(location) && (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              leftSection={<IconEdit size={12} />}
+                              onClick={() => navigate(`/location/${location.id}/edit`)}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                        </Group>
                       </Table.Td>
                     </Table.Tr>
                   ))}
@@ -179,15 +201,27 @@ export default function LocationList() {
                         </Text>
                       )}
 
-                      <Button
-                        variant="light"
-                        size="xs"
-                        fullWidth
-                        leftSection={<IconEye size={12} />}
-                        onClick={() => navigateToLocation(location)}
-                      >
-                        View Details
-                      </Button>
+                      <Group gap="xs">
+                        <Button
+                          variant="light"
+                          size="xs"
+                          style={{ flex: 1 }}
+                          leftSection={<IconEye size={12} />}
+                          onClick={() => navigateToLocation(location)}
+                        >
+                          View Details
+                        </Button>
+                        {canEditLocation(location) && (
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            leftSection={<IconEdit size={12} />}
+                            onClick={() => navigate(`/location/${location.id}/edit`)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </Group>
                     </Stack>
                   </Card>
                 ))}
