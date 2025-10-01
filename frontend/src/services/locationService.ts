@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Location, LocationUpdate, User } from '../types'
+import { Location, LocationUpdate, User, PaginatedResponse, PaginationParams } from '../types'
 
 const API_BASE_URL = '/api'
 
@@ -28,9 +28,14 @@ api.interceptors.request.use((config) => {
 })
 
 export const locationService = {
-  async getLocations(): Promise<Location[]> {
-    const response = await api.get('/locations/')
-    return response.data.results || response.data
+  async getLocations(params?: PaginationParams): Promise<PaginatedResponse<Location>> {
+    const response = await api.get('/locations/', { params })
+    return response.data
+  },
+
+  async getAllLocations(): Promise<Location[]> {
+    const response = await api.get('/locations/all/')
+    return response.data
   },
 
   async getLocation(id: string): Promise<Location> {
@@ -67,9 +72,9 @@ export const locationService = {
     return response.data
   },
 
-  async getLocationUpdates(locationId: string): Promise<LocationUpdate[]> {
-    const response = await api.get(`/locations/${locationId}/updates/`)
-    return response.data.results || response.data
+  async getLocationUpdates(locationId: string, params?: PaginationParams): Promise<PaginatedResponse<LocationUpdate>> {
+    const response = await api.get(`/locations/${locationId}/updates/`, { params })
+    return response.data
   },
 
   async createLocationUpdate(locationId: string, updateData: Partial<LocationUpdate>): Promise<LocationUpdate> {
@@ -79,9 +84,9 @@ export const locationService = {
 }
 
 export const userService = {
-  async getUsers(): Promise<User[]> {
-    const response = await api.get('/accounts/users/')
-    return response.data.results || response.data
+  async getUsers(params?: PaginationParams): Promise<PaginatedResponse<User>> {
+    const response = await api.get('/accounts/users/', { params })
+    return response.data
   },
 
   async getUser(id: string): Promise<User> {

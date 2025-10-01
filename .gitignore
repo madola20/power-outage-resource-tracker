@@ -77,6 +77,7 @@ docs/agent/*
 
 #cursor
 .cursor/
+*.code-workspace
 
 #other
 backend/local-scripts/

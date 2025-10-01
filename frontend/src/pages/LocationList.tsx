@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { Table, Badge, Text, Title, Group, Button, Paper, Stack, Box, Card, SimpleGrid } from '@mantine/core'
+import { Table, Badge, Text, Title, Group, Button, Paper, Stack, Box, Card, Pagination, Center } from '@mantine/core'
 import { IconPlus, IconMapPin, IconEye } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useLocationNavigation } from '../hooks/useLocationNavigation'
 import { locationService } from '../services/locationService'
 import { useAuthStore } from '../stores/authStore'
@@ -10,11 +11,16 @@ export default function LocationList() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { navigateToLocation } = useLocationNavigation()
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
 
-  const { data: locations = [], isLoading } = useQuery({
-    queryKey: ['locations'],
-    queryFn: locationService.getLocations,
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: ['locations', currentPage],
+    queryFn: () => locationService.getLocations({ page: currentPage, page_size: pageSize }),
   })
+
+  const locations = paginatedData?.results || []
+  const totalPages = paginatedData ? Math.ceil(paginatedData.count / pageSize) : 0
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -38,16 +44,23 @@ export default function LocationList() {
   }
 
   return (
-    <Stack gap={{ base: 'sm', sm: 'md' }}>
+    <Stack gap="md">
       <Group justify="space-between" wrap="wrap">
-        <Title order={2} size={{ base: 'h3', sm: 'h2' }}>
-          Power Outage Locations
-        </Title>
+        <div>
+          <Title order={2}>
+            Power Outage Locations
+          </Title>
+          {paginatedData && (
+            <Text size="sm" c="dimmed" mt={4}>
+              Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, paginatedData.count)} of {paginatedData.count} locations
+            </Text>
+          )}
+        </div>
         {user?.role === 'reporter' && (
           <Button 
             leftSection={<IconPlus size={16} />} 
             onClick={() => navigate('/location/new')}
-            size={{ base: 'sm', sm: 'md' }}
+            size="md"
           >
             Report New Outage
           </Button>
@@ -180,6 +193,19 @@ export default function LocationList() {
                 ))}
               </Stack>
             </Box>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Center mt="md">
+                <Pagination
+                  value={currentPage}
+                  onChange={setCurrentPage}
+                  total={totalPages}
+                  size="sm"
+                  withEdges
+                />
+              </Center>
+            )}
           </>
         )}
       </Paper>

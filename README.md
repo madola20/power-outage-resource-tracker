@@ -50,7 +50,7 @@ POSTGRES_DB=scout_db
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_secure_password_here
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5433
+POSTGRES_PORT=5432
 
 # Django Configuration
 SECRET_KEY=your-secret-key-here
@@ -102,7 +102,7 @@ npm run dev
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **Django Admin**: http://localhost:8000/admin
-- **Database**: localhost:5433 (PostgreSQL)
+- **Database**: localhost:5432 (PostgreSQL)
 
 ## 👥 User Roles & Permissions
 

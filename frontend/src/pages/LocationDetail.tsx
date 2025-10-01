@@ -18,11 +18,13 @@ export default function LocationDetail() {
     enabled: !!id,
   })
 
-  const { data: updates = [] } = useQuery({
+  const { data: updatesData } = useQuery({
     queryKey: ['location-updates', id],
     queryFn: () => locationService.getLocationUpdates(id!),
     enabled: !!id,
   })
+
+  const updates = updatesData?.results || []
 
   if (isLoading) {
     return <Text>Loading location details...</Text>
