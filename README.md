@@ -6,7 +6,10 @@ A comprehensive CRM-like application for tracking and managing power outages, bu
 
 - **Multi-role User System**: Admin, Team Lead, Team Member, and Reporter roles with different permissions
 - **Location Management**: Track power outage locations with status updates and assignments
-- **Real-time Dashboard**: Monitor outage statistics and recent activity
+- **Location Editing**: Role-based editing capabilities with assignment and priority management
+- **Real-time Dashboard**: Monitor outage statistics and recent activity with clickable location links
+- **Phone Number Formatting**: Auto-formatting and validation for reporter contact information
+- **Pagination**: Efficient browsing of large location datasets
 - **Mobile-Responsive**: Optimized for both desktop and mobile devices
 - **Docker Support**: Easy deployment with Docker and Docker Compose
 
@@ -104,28 +107,83 @@ npm run dev
 - **Django Admin**: http://localhost:8000/admin
 - **Database**: localhost:5432 (PostgreSQL)
 
+## 📱 Application Pages
+
+### Dashboard (`/`)
+- Overview of outage statistics
+- Recent locations with clickable navigation
+- Role-based data visibility
+
+### Locations List (`/locations`)
+- Paginated list of all accessible locations
+- Role-based filtering and visibility
+- Edit buttons for locations user can modify
+
+### Location Detail (`/location/:id`)
+- Complete location information
+- Update history timeline
+- Edit button (if user has permissions)
+
+### Location Edit (`/location/:id/edit`)
+- Role-based editing capabilities
+- Assignment management
+- Priority updates (team leads and admins)
+- Contact information editing
+
+### New Location Report (`/location/new`)
+- Form for reporting new outages
+- Auto-populated reporter information
+- Phone number formatting and validation
+
 ## 👥 User Roles & Permissions
 
 ### Admin
 - Full system access
 - Can view all locations
-- Can assign locations to any user
+- Can assign locations to any user (team members and team leads)
+- Can update location priority and status
+- Can edit contact information for any location
 - Can manage users and system settings
 
 ### Team Lead
-- Can view assigned locations
-- Can assign locations to themselves and team members
+- Can view locations assigned to team members, unassigned locations, and locations they reported
+- Can assign locations to team members
 - Can update location status and priority
+- Can edit contact information for locations they can access
+- Can manage their team's workload
 
 ### Team Member
-- Can view assigned locations
-- Can update location status and add notes
-- Cannot assign locations to others
+- Can view locations assigned to them
+- Can assign locations to themselves
+- Can update location status (limited to assigned locations)
+- Can edit contact information for locations they can access
+- Cannot assign locations to others or update priority
 
 ### Reporter
 - Can create new location reports
 - Can view their own reported locations
-- Cannot assign or update locations
+- Can edit contact information and cancel status for locations they reported
+- Cannot assign locations or update priority
+
+## 🆕 Recent Updates
+
+### Location Editing System
+- **Role-based Editing**: Different user roles can edit different fields based on their permissions
+- **Assignment Management**: Team leads and admins can assign locations to team members
+- **Priority Updates**: Team leads and admins can update location priority levels
+- **Contact Information**: Separate email and phone fields with auto-formatting
+- **Mobile-Friendly**: Responsive design optimized for mobile devices
+
+### Enhanced User Experience
+- **Clickable Dashboard**: Recent locations on dashboard are now clickable and navigate to detail pages
+- **Phone Number Formatting**: Auto-formatting for phone numbers (xxx) xxx-xxxx with validation
+- **Pagination**: Efficient browsing of large location datasets with page controls
+- **Assignment Workflow**: Streamlined process for team members to assign themselves to locations
+
+### Data Management
+- **Contact Field Separation**: Reporter contact information split into separate email and phone fields
+- **Change Tracking**: All edits are logged in the location update history
+- **Permission Validation**: Backend validation ensures users can only edit fields they have permission for
 
 ## 📊 Database Schema
 
@@ -139,7 +197,9 @@ npm run dev
 - Status management (reported, investigating, in progress, resolved, cancelled)
 - Priority levels (low, medium, high, critical)
 - Assignment to team members
+- Reporter contact information (separate email and phone fields)
 - Geographic coordinates and address information
+- Customer impact estimates
 
 ### Location Updates
 - Audit trail for location changes
@@ -161,11 +221,14 @@ npm run dev
 - `PUT /api/users/profile/` - Update user profile
 
 #### Locations
-- `GET /api/locations/` - List locations (filtered by role)
+- `GET /api/locations/` - List locations (filtered by role, paginated)
+- `GET /api/locations/all/` - Get all locations (for dashboard statistics)
 - `POST /api/locations/` - Create new location
 - `GET /api/locations/{id}/` - Get location details
-- `PUT /api/locations/{id}/` - Update location
+- `PUT /api/locations/{id}/` - Update location (role-based field restrictions)
+- `PATCH /api/locations/{id}/` - Partial update location
 - `POST /api/locations/{id}/assign/` - Assign location
+- `GET /api/locations/{id}/updates/` - Get location update history
 
 ### Environment Variables
 
