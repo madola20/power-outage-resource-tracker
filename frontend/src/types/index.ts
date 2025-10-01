@@ -29,7 +29,8 @@ export interface Location {
   estimated_customers_affected?: number
   assigned_to?: User
   reported_by?: User
-  reporter_contact?: string
+  reporter_email?: string
+  reporter_phone?: string
   created_at: string
   updated_at: string
   reported_at: string

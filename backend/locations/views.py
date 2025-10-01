@@ -8,8 +8,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.db import models
 from .models import Location, LocationUpdate
-from .serializers import LocationSerializer, LocationUpdateSerializer, LocationCreateSerializer
+from .serializers import LocationSerializer, LocationUpdateSerializer, LocationCreateSerializer, LocationEditSerializer
 from .permissions import CanAssignLocations, CanEditLocations
 
 User = get_user_model()
@@ -26,6 +27,8 @@ class LocationViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return LocationCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return LocationEditSerializer
         return LocationSerializer
     
     def get_queryset(self):
@@ -37,9 +40,11 @@ class LocationViewSet(viewsets.ModelViewSet):
         if user.can_view_all_locations():
             return Location.objects.select_related('assigned_to', 'reported_by').all()
         elif user.is_team_lead:
-            # Team leads can see locations assigned to them or their team members
+            # Team leads can see locations assigned to them, their team members, unassigned locations, or locations they reported
             return Location.objects.filter(
-                assigned_to__in=User.objects.filter(role__in=['team_lead', 'team_member'])
+                models.Q(assigned_to__in=User.objects.filter(role__in=['team_lead', 'team_member'])) |
+                models.Q(assigned_to__isnull=True) |
+                models.Q(reported_by=user)
             ).select_related('assigned_to', 'reported_by')
         elif user.is_team_member:
             # Team members can see locations assigned to them
@@ -57,7 +62,7 @@ class LocationViewSet(viewsets.ModelViewSet):
         elif self.action in ['create']:
             permission_classes = [IsAuthenticated]  # Anyone can report a location
         elif self.action in ['update', 'partial_update']:
-            permission_classes = [IsAuthenticated, CanEditLocations]
+            permission_classes = [IsAuthenticated]  # Object-level permission will be checked
         elif self.action in ['destroy']:
             permission_classes = [IsAuthenticated, CanEditLocations]
         else:
@@ -65,14 +70,34 @@ class LocationViewSet(viewsets.ModelViewSet):
         
         return [permission() for permission in permission_classes]
     
+    def check_object_permissions(self, request, obj):
+        """
+        Check object-level permissions for update operations
+        """
+        if self.action in ['update', 'partial_update']:
+            # Use the CanEditLocations permission's object-level check
+            can_edit = CanEditLocations()
+            if not can_edit.has_object_permission(request, self, obj):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("You do not have permission to edit this location.")
+        super().check_object_permissions(request, obj)
+    
     def perform_create(self, serializer):
         """
-        Set the reporter when creating a location
+        Set the reporter when creating a location and create initial update
         """
         if self.request.user.is_reporter:
-            serializer.save(reported_by=self.request.user)
+            location = serializer.save(reported_by=self.request.user)
         else:
-            serializer.save()
+            location = serializer.save()
+        
+        # Create initial location update
+        LocationUpdate.objects.create(
+            location=location,
+            updated_by=self.request.user,
+            update_type='general_update',
+            notes=f'Location created and reported by {self.request.user.get_full_name()}'
+        )
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, CanAssignLocations])
     def assign(self, request, pk=None):
@@ -153,6 +178,49 @@ class LocationViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(location)
         return Response(serializer.data)
+    
+    def perform_update(self, serializer):
+        """
+        Update location and create update record
+        """
+        old_location = self.get_object()
+        old_status = old_location.status
+        old_email = old_location.reporter_email
+        old_phone = old_location.reporter_phone
+        old_assigned_to = old_location.assigned_to
+        old_priority = old_location.priority
+        
+        location = serializer.save()
+        
+        # Create update record for changes
+        changes = []
+        if old_status != location.status:
+            changes.append(f"Status changed from {old_location.get_status_display()} to {location.get_status_display()}")
+        
+        if old_email != location.reporter_email:
+            changes.append(f"Reporter email updated")
+            
+        if old_phone != location.reporter_phone:
+            changes.append(f"Reporter phone updated")
+        
+        if old_assigned_to != location.assigned_to:
+            if old_assigned_to and location.assigned_to:
+                changes.append(f"Assignment changed from {old_assigned_to.get_full_name()} to {location.assigned_to.get_full_name()}")
+            elif old_assigned_to and not location.assigned_to:
+                changes.append(f"Assignment removed from {old_assigned_to.get_full_name()}")
+            elif not old_assigned_to and location.assigned_to:
+                changes.append(f"Location assigned to {location.assigned_to.get_full_name()}")
+        
+        if old_priority != location.priority:
+            changes.append(f"Priority changed from {old_location.get_priority_display()} to {location.get_priority_display()}")
+        
+        if changes:
+            LocationUpdate.objects.create(
+                location=location,
+                updated_by=self.request.user,
+                update_type='general_update',
+                notes=f"Location updated: {', '.join(changes)}"
+            )
     
     @action(detail=False, methods=['get'], pagination_class=None)
     def all(self, request):

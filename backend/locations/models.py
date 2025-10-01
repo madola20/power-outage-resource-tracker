@@ -73,7 +73,8 @@ class Location(models.Model):
         related_name='reported_locations',
         limit_choices_to={'role': 'reporter'}
     )
-    reporter_contact = models.CharField(max_length=255, blank=True, help_text="Contact info if different from reporter")
+    reporter_email = models.EmailField(blank=True, help_text="Reporter's email address")
+    reporter_phone = models.CharField(max_length=20, blank=True, help_text="Reporter's phone number")
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

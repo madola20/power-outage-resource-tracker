@@ -1,8 +1,7 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { 
-  Paper, Text, Title, Badge, Group, Stack, Button, 
-  Select, Textarea, Grid, Card, Divider 
+  Paper, Text, Title, Badge, Group, Stack, Grid, Divider, Button 
 } from '@mantine/core'
 import { IconMapPin, IconUser, IconCalendar, IconEdit } from '@tabler/icons-react'
 import { locationService } from '../services/locationService'
@@ -10,6 +9,7 @@ import { useAuthStore } from '../stores/authStore'
 
 export default function LocationDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { user } = useAuthStore()
 
   const { data: location, isLoading } = useQuery({
@@ -55,6 +55,24 @@ export default function LocationDetail() {
     }
   }
 
+  // Check if user can edit this location
+  const canEdit = location && (
+    user?.role === 'admin' ||
+    user?.role === 'team_lead' ||
+    (user?.role === 'team_member' && location.assigned_to?.id === user.id) ||
+    (user?.role === 'reporter' && location.reported_by?.id === user.id)
+  )
+
+  // Format phone number for display
+  const formatPhoneForDisplay = (phone: string) => {
+    if (!phone) return ''
+    const cleaned = phone.replace(/\D/g, '')
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`
+    }
+    return phone
+  }
+
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -66,6 +84,15 @@ export default function LocationDetail() {
           <Badge color={getPriorityColor(location.priority)} variant="light" size="lg">
             {location.priority_display}
           </Badge>
+          {canEdit && (
+            <Button
+              variant="outline"
+              leftSection={<IconEdit size={16} />}
+              onClick={() => navigate(`/location/${id}/edit`)}
+            >
+              Edit
+            </Button>
+          )}
         </Group>
       </Group>
 
@@ -149,10 +176,16 @@ export default function LocationDetail() {
                     </Text>
                   </div>
                 </Group>
-                {location.reporter_contact && (
+                {location.reporter_email && (
                   <div>
-                    <Text size="sm" c="dimmed">Contact</Text>
-                    <Text fw={500}>{location.reporter_contact}</Text>
+                    <Text size="sm" c="dimmed">Reporter Email</Text>
+                    <Text fw={500}>{location.reporter_email}</Text>
+                  </div>
+                )}
+                {location.reporter_phone && (
+                  <div>
+                    <Text size="sm" c="dimmed">Reporter Phone</Text>
+                    <Text fw={500}>{formatPhoneForDisplay(location.reporter_phone)}</Text>
                   </div>
                 )}
               </Stack>
